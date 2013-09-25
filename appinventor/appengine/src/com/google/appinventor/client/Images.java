@@ -388,6 +388,12 @@ public interface Images extends Resources {
   ImageResource web();
 
   /**
+  * Designer Palette item: Logger component
+  */
+  @Source("com/google/appinventor/images/logger.png")
+  ImageResource loggerComponent();
+  
+  /**
    * Built in drawer item: control
    */
   @Source("com/google/appinventor/images/control.png")
