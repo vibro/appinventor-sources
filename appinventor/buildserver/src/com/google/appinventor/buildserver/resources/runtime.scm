@@ -772,6 +772,9 @@
          (loop))
        *the-null-value*)))))
 
+;; Defining not not
+(define
+  (yail-not-not foo) (not (not foo)))
 ;;; RUNTIME library
 
 ;; TODO(markf): explicit 'provide' doesn't seem to work for us, so we put the runtime in a known
