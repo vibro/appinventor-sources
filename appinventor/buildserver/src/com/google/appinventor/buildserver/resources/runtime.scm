@@ -1544,6 +1544,8 @@ Block name               Kawa implementation
 - position in list       (yail-list-index item list)
 - for each                (foreach variable bodyform yail-list) [macro] [in control drawer]
 - pick random item        (yail-list-pick-random yail-list)
+- pick first item         (yail-list-pick-first yail-list)
+- pick last item          (yail-list-pick-last yail-list)
 - is list?                (yail-list? object)
 - is empty?               (yail-list-empty? yail-list)
 - lookup in pairs         (yail-alist-lookup key yail-list-of-pairs default)
@@ -1850,6 +1852,22 @@ list, use the make-yail-list constructor with no arguments.
   (yail-list-get-item yail-list
               (random-integer 1  (yail-list-length yail-list))))
 
+;; Returns the first element in the list
+(define (yail-list-pick-first yail-list)
+  (if (yail-list-empty? yail-list)
+      (signal-runtime-error
+       (format #f "Pick first item: Attempt to pick the first element from an empty list")
+       "Invalid list operation"))
+  (yail-list-get-item yail-list 1))
+
+;; Returns the last element in the list
+(define (yail-list-pick-last yail-list)
+  (if (yail-list-empty? yail-list)
+      (signal-runtime-error
+       (format #f "Pick last item: Attempt to pick the last element from an empty list")
+       "Invalid list operation"))
+  (yail-list-get-item yail-list 
+      (yail-list-length yail-list)))
 
 ;; Implements Blocks foreach, which takes a Yail-list as argument
 ;; This is called by Yail foreach, defined in macros.scm
