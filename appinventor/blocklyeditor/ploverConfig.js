@@ -68,6 +68,8 @@
     "./src/field_parameter_flydown.js",
     "./src/field_global_flydown.js",
     "./src/field_procedure_flydown.js",
+    "./src/backpack.js",
+    "./src/backpackBubble.js",
 
     //language files
     './src/language/common/control.js',

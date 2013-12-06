@@ -48,6 +48,7 @@ goog.require('Blockly.TypeBlock');
 goog.require('Blockly.utils');
 goog.require('Blockly.WidgetDiv');
 goog.require('Blockly.Workspace');
+goog.require('Blockly.Backpack');
 
 // Closure dependencies.
 goog.require('goog.dom');
@@ -495,6 +496,14 @@ Blockly.showContextMenu_ = function(xy) {
     };
     options.push(expandOption);
   }
+
+  var backpackOption = {enabled: true};
+
+    backpackOption.text = "Open Backpack";
+    backpackOption.callback = function() {
+        Blockly.Backpack.setVisible(true)
+      };
+    options.push(backpackOption);
 
   // Arrange blocks in row order.
   var arrangeOptionH = {enabled: (Blockly.workspace_arranged_position !== Blockly.BLKS_HORIZONTAL)};
