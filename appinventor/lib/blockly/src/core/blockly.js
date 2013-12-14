@@ -328,7 +328,9 @@ Blockly.onMouseDown_ = function(e) {
     if (Blockly.ContextMenu) {
       Blockly.showContextMenu_(Blockly.mouseToSvg(e));
     }
-  } else if ((Blockly.readOnly || isTargetSvg) &&
+  } else if (Blockly.Backpack.isVisible && Blockly.Backpack.workspace_) {
+      Blockly.Backpack.onMouseDown(e)
+  } else  if ((Blockly.readOnly || isTargetSvg) &&
              Blockly.mainWorkspace.scrollbar) {
     // If the workspace is editable, only allow dragging when gripping empty
     // space.  Otherwise, allow dragging when gripping anywhere.
@@ -350,6 +352,10 @@ Blockly.onMouseDown_ = function(e) {
 Blockly.onMouseUp_ = function(e) {
   Blockly.setCursorHand_(false);
   Blockly.mainWorkspace.dragMode = false;
+  if (Blockly.Backpack.isVisible){
+    Blockly.Backpack.workspace_.dragMode = false;
+  }
+  
 };
 
 /**
@@ -358,23 +364,27 @@ Blockly.onMouseUp_ = function(e) {
  * @private
  */
 Blockly.onMouseMove_ = function(e) {
-  if (Blockly.mainWorkspace.dragMode) {
-    Blockly.removeAllRanges();
-    var dx = e.clientX - Blockly.mainWorkspace.startDragMouseX;
-    var dy = e.clientY - Blockly.mainWorkspace.startDragMouseY;
-    var metrics = Blockly.mainWorkspace.startDragMetrics;
-    var x = Blockly.mainWorkspace.startScrollX + dx;
-    var y = Blockly.mainWorkspace.startScrollY + dy;
-    x = Math.min(x, -metrics.contentLeft);
-    y = Math.min(y, -metrics.contentTop);
-    x = Math.max(x, metrics.viewWidth - metrics.contentLeft -
-                 metrics.contentWidth);
-    y = Math.max(y, metrics.viewHeight - metrics.contentTop -
-                 metrics.contentHeight);
+  if (Blockly.Backpack.workspace_) {
+      Blockly.Backpack.onMouseMove(e)
+  } else {
+    if (Blockly.mainWorkspace.dragMode) {
+      Blockly.removeAllRanges();
+      var dx = e.clientX - Blockly.mainWorkspace.startDragMouseX;
+      var dy = e.clientY - Blockly.mainWorkspace.startDragMouseY;
+      var metrics = Blockly.mainWorkspace.startDragMetrics;
+      var x = Blockly.mainWorkspace.startScrollX + dx;
+      var y = Blockly.mainWorkspace.startScrollY + dy;
+      x = Math.min(x, -metrics.contentLeft);
+      y = Math.min(y, -metrics.contentTop);
+      x = Math.max(x, metrics.viewWidth - metrics.contentLeft -
+                   metrics.contentWidth);
+      y = Math.max(y, metrics.viewHeight - metrics.contentTop -
+                   metrics.contentHeight);
 
-    // Move the scrollbars and the page will scroll automatically.
-    Blockly.mainWorkspace.scrollbar.set(-x - metrics.contentLeft,
-                                        -y - metrics.contentTop);
+      // Move the scrollbars and the page will scroll automatically.
+      Blockly.mainWorkspace.scrollbar.set(-x - metrics.contentLeft,
+                                          -y - metrics.contentTop);
+    }
   }
 };
 
@@ -499,9 +509,17 @@ Blockly.showContextMenu_ = function(xy) {
 
   var backpackOption = {enabled: true};
 
-    backpackOption.text = "Open Backpack";
+    if (Blockly.Backpack.isVisible){
+      backpackOption.text = Blockly.MSG_BACKPACK_C;
+    } else {
+      backpackOption.text = Blockly.MSG_BACKPACK_O;
+    }
     backpackOption.callback = function() {
-        Blockly.Backpack.setVisible(true)
+        if (Blockly.Backpack.isVisible) {
+          Blockly.Backpack.setVisible(false)  
+        } else {
+          Blockly.Backpack.setVisible(true)
+        }
       };
     options.push(backpackOption);
 

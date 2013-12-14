@@ -65,10 +65,52 @@ Blockly.Backpack.isVisible = false;
 
 Blockly.Backpack.shouldHide = false;
 
+Blockly.Backpack.hasScrollbars = true;  
+
 Blockly.Backpack.getMetrics = function() {
+
+  var viewWidth = 390 - Blockly.Scrollbar.scrollbarThickness;
+  var viewHeight = 150 - Blockly.Scrollbar.scrollbarThickness;
+  try {
+    var blockBox = Blockly.Backpack.workspace_.getCanvas().getBBox();
+  } catch (e) {
+    // Firefox has trouble with hidden elements (Bug 528969).
+    return null;
+  }
+  if (Blockly.Backpack.workspace_.scrollbar) {
+    // Add a border around the content that is at least half a screenful wide.
+    var leftEdge = Math.min(blockBox.x - viewWidth / 2,
+                            blockBox.x + blockBox.width - viewWidth);
+    var rightEdge = Math.max(blockBox.x + blockBox.width + viewWidth / 2,
+                             blockBox.x + viewWidth);
+    var topEdge = Math.min(blockBox.y - viewHeight / 2,
+                           blockBox.y + blockBox.height - viewHeight);
+    var bottomEdge = Math.max(blockBox.y + blockBox.height + viewHeight / 2, blockBox.y + viewHeight);
+  } else {
+    var leftEdge = blockBox.x;
+    var rightEdge = leftEdge + blockBox.width;
+    var topEdge = blockBox.y;
+    var bottomEdge = topEdge + blockBox.height;
+  }
+  //We don't use Blockly.Toolbox in our version of Blockly instead we use drawer.js
+  //var absoluteLeft = Blockly.RTL ? 0 : Blockly.Toolbox.width;
+  var absoluteLeft = Blockly.RTL ? 0 : 0;
   return {
-    viewHeight: 100,
-    viewWidth: 200,  // This seem wrong, but results in correct RTL layout.
+    viewHeight: 150,
+    viewWidth: 390,
+    contentHeight: bottomEdge - topEdge,
+    contentWidth: rightEdge - leftEdge,
+    viewTop: -Blockly.Backpack.workspace_.scrollY,
+    viewLeft: -Blockly.Backpack.workspace_.scrollX,
+    contentTop: topEdge,
+    contentLeft: leftEdge,
+    absoluteTop: 0,
+    absoluteLeft: absoluteLeft
+  };
+/*
+  return {
+    viewHeight: Blockly.Backpack.workspaceHeight_,
+    viewWidth: Blockly.Backpack.workspaceWidth_,  // This seem wrong, but results in correct RTL layout.
     contentHeight: 100,
     contentWidth: 200,
     viewTop: 0,
@@ -78,7 +120,30 @@ Blockly.Backpack.getMetrics = function() {
     absoluteTop: 0,
     absoluteLeft: 0
   };
+  */
 }
+
+Blockly.Backpack.setMetrics = function(xyRatio) {
+  if (!Blockly.Backpack.workspace_.scrollbar) {
+    throw 'Attempt to set main workspace scroll without scrollbars.';
+  }
+  var metrics = Blockly.Backpack.getMetrics();
+  if (goog.isNumber(xyRatio.x)) {
+    Blockly.Backpack.workspace_.scrollX = -metrics.contentWidth * xyRatio.x -
+        metrics.contentLeft;
+  }
+  if (goog.isNumber(xyRatio.y)) {
+    Blockly.Backpack.workspace_.scrollY = -metrics.contentHeight * xyRatio.y -
+        metrics.contentTop;
+  }
+  var translation = 'translate(' +
+      (Blockly.Backpack.workspace_.scrollX + metrics.absoluteLeft) + ',' +
+      (Blockly.Backpack.workspace_.scrollY + metrics.absoluteTop) + ')';
+  Blockly.Backpack.workspace_.getCanvas().setAttribute('transform', translation);
+  Blockly.Backpack.workspace_.getBubbleCanvas().setAttribute('transform',
+                                                       translation);
+};
+
 
 Blockly.Backpack.createEditor_ = function() {
   /* Create the editor.  Here's the markup that will be generated:
@@ -95,8 +160,35 @@ Blockly.Backpack.createEditor_ = function() {
        'height': '100%', 'width': '100%'}, Blockly.Backpack.svgDialog_);
 
   Blockly.Backpack.workspace_ = new Blockly.Workspace(
-      function() {return Blockly.Backpack.getMetrics();}, null);
+      Blockly.Backpack.getMetrics, Blockly.Backpack.setMetrics)
+  Blockly.Backpack.workspace_.dragMode = false;
   Blockly.Backpack.svgDialog_.appendChild(Blockly.Backpack.workspace_.createDom());
+
+
+  if (Blockly.Backpack.hasScrollbars){ 
+      Blockly.Backpack.workspace_.scrollbar = new Blockly.ScrollbarPair(
+         Blockly.Backpack.workspace_);
+      Blockly.Backpack.workspace_.scrollbar.resize();
+      }
+    
+  Blockly.Backpack.workspace_.addTrashcan();
+
+  // [lyn, 12/10/13] Let's make the backpack workspace nonempty by adding some blocks
+  var xmlString = '<xml>' +
+      '<block type="controls_forRange">' +
+      '<value name="START">' +
+      '<block type="math_add" inline="true">' +
+      '<mutation items="2"></mutation>' +
+      '<value name="NUM0"><block type="math_number"><title name="NUM">1</title></block></value>' +
+      '<value name="NUM1"><block type="text"><title name="TEXT">a</title></block></value>' +
+      '</block></value>' +
+      '<value name="END"><block type="math_number"><title name="NUM">5</title></block></value>' +
+      '<value name="STEP"><block type="math_number"><title name="NUM">1</title></block></value>' +
+      '</block>' +
+      '</xml>';
+  var dom = Blockly.Xml.textToDom(xmlString);
+  Blockly.Xml.domToWorkspace(Blockly.Backpack.workspace_, dom);
+
 
   //when Backpack bubble is clicked, do not close Backpack
   Blockly.bindEvent_(Blockly.Backpack.svgDialog_, 'mousedown', Blockly.Backpack.svgDialog_,
@@ -114,28 +206,16 @@ Blockly.Backpack.createEditor_ = function() {
  * @private
  */
 Blockly.Backpack.resizeBubble_ = function() {
-  var doubleBorderWidth = 2 * Blockly.Bubble.BORDER_WIDTH;
+    // [lyn, 12/10/13] Some code that makes a bubble of a particular size.
+    //Blockly.Backpack.workspace_.topBlocks_[0].render();
+    Blockly.Backpack.workspace_.render();
 
-  try {
-    var workspaceSize = Blocky.Backpack.workspace_.getCanvas().getBBox();
-  } catch (e) {
-    // Firefox has trouble with hidden elements (Bug 528969).
-    return;
-  }
+    /*
+    var workspaceSize = Blockly.Backpack.workspace_.getCanvas().getBBox();
+    var doubleBorderWidth = 2 * Blockly.Bubble.BORDER_WIDTH;
+    var width = Blockly.Backpack.bubble_.width_
+    var height = Blockly.Backpack.bubble_.height_
 
-  var width;
-  if (Blockly.RTL) {
-    width = -workspaceSize.x;
-  } else {
-    width = workspaceSize.width + workspaceSize.x;
-  }
-  var height = Math.max(workspaceSize.height + doubleBorderWidth * 3);
-                        
-  width += doubleBorderWidth * 3;
-  // Only resize if the size difference is significant.  Eliminates shuddering.
-  if (Math.abs(Blockly.Backpack.workspaceWidth_ - width) > doubleBorderWidth ||
-      Math.abs(Blockly.Backpack.workspaceHeight_ - height) > doubleBorderWidth) {
-    // Record some layout information for getFlyoutMetrics_.
     Blockly.Backpack.workspaceWidth_ = width;
     Blockly.Backpack.workspaceHeight_ = height;
     // Resize the bubble.
@@ -143,13 +223,39 @@ Blockly.Backpack.resizeBubble_ = function() {
                                height + doubleBorderWidth);
     Blockly.Backpack.svgDialog_.setAttribute('width', Blockly.Backpack.workspaceWidth_);
     Blockly.Backpack.svgDialog_.setAttribute('height', Blockly.Backpack.workspaceHeight_);
-  }
+    */
 
-  if (Blockly.RTL) {
-    // Scroll the workspace to always left-align.
-    var translation = 'translate(' + this.workspaceWidth_ + ',0)';
-    Blockly.Backpack.workspace_.getCanvas().setAttribute('transform', translation);
-  }
+    var doubleBorderWidth = 2 * Blockly.BackpackBubble.BORDER_WIDTH;
+
+    try {
+      var workspaceSize = Blockly.Backpack.workspace_.getCanvas().getBBox();
+    } catch (e) {
+      // Firefox has trouble with hidden elements (Bug 528969).
+      return;
+    }
+
+    var width;
+    if (Blockly.RTL) {
+      width = -workspaceSize.x;
+    } else {
+      width = workspaceSize.width + workspaceSize.x;
+    }
+    var height = workspaceSize.height + doubleBorderWidth * 3
+                          
+    width += doubleBorderWidth * 3;
+    // Only resize if the size difference is significant.  Eliminates shuddering.
+    if (Math.abs(Blockly.Backpack.workspaceWidth_ - width) > doubleBorderWidth ||
+        Math.abs(Blockly.Backpack.workspaceHeight_ - height) > doubleBorderWidth) {
+      // Record some layout information for getFlyoutMetrics_.
+      Blockly.Backpack.workspaceWidth_ = width;
+      Blockly.Backpack.workspaceHeight_ = height;
+      // Resize the bubble.
+      Blockly.Backpack.bubble_.setBubbleSize(width + doubleBorderWidth,
+                                 height + doubleBorderWidth);
+      Blockly.Backpack.svgDialog_.setAttribute('width', Blockly.Backpack.workspaceWidth_);
+      Blockly.Backpack.svgDialog_.setAttribute('height', Blockly.Backpack.workspaceHeight_);
+    }
+
 };
 
 /**
@@ -164,43 +270,19 @@ Blockly.Backpack.setVisible = function(visible) {
   if (visible) {
     // Create the bubble.
     Blockly.Backpack.bubble_ = new Blockly.BackpackBubble(Blockly.mainWorkspace,
-        Blockly.Backpack.createEditor_(), 200, 100);
-    Blockly.Backpack.bubble_.setColour("ff0000")
-   //remove these three arguments
-   //make new bubble class
+        Blockly.Backpack.createEditor_(), (Blockly.getMainWorkspaceMetrics_().viewWidth - 50), 200);
 
-    /*
-    var thisObj = Blockly.Backpack;
-    Blockly.Backpack.flyout_.init(Blockly.Backpack.workspace_, false);
-    this.flyout_.show(this.quarkXml_);
-
-    this.rootBlock_ = this.block_.decompose(this.workspace_);
-    var blocks = this.rootBlock_.getDescendants();
-    for (var i = 0, child; child = blocks[i]; i++) {
-      child.render();
-    }
-    // The root block should not be dragable or deletable.
-    this.rootBlock_.setMovable(false);
-    this.rootBlock_.setDeletable(false);
-    var margin = this.flyout_.CORNER_RADIUS * 2;
-    var x = this.flyout_.width_ + margin;
-    if (Blockly.RTL) {
-      x = -x;
-    }
-    this.rootBlock_.moveBy(x, margin);
-    // Save the initial connections, then listen for further changes.
-    if (this.block_.saveConnections) {
-      this.block_.saveConnections(this.rootBlock_);
-      this.sourceListener_ = Blockly.bindEvent_(
-          this.block_.workspace.getCanvas(),
-          'blocklyWorkspaceChange', this.block_,
-          function() {thisObj.block_.saveConnections(thisObj.rootBlock_)});
-    }
-    */
-    //Blockly.Backpack.resizeBubble_();
+    // [lyn, 12/10/13] Color string needs to begin with #
+    Blockly.Backpack.bubble_.setColour("#00ff00")
+   
+    
+    // [lyn, 12/10/13] Need to uncomment this line
+    Blockly.Backpack.resizeBubble_();
     // When the Backpack's workspace changes, update the source block.
     Blockly.bindEvent_(Blockly.Backpack.workspace_.getCanvas(), 'blocklyWorkspaceChange',
         Blockly.Backpack.block_, function() {Blockly.Backpack.workspaceChanged_();});
+   
+
     Blockly.Backpack.isVisible = true
   } else {
     // Dispose of the bubble.
@@ -252,3 +334,107 @@ Blockly.Backpack.workspaceChanged_ = function() {
   }
 };
 
+//mouse callbacks
+
+/**
+ * Obtains starting coordinates so the block can return to spot after copy
+ * @param {!Event} e Mouse down event.
+ */
+Blockly.Backpack.onMouseDown = function(e){
+  // var xy = Blockly.getAbsoluteXY_(this.svgGroup_);
+  // this.startX = xy.x;
+  // this.startY = xy.y;
+
+  Blockly.Backpack.workspace_.dragMode = true;
+  // Record the current mouse position.
+  Blockly.Backpack.workspace_.startDragMouseX = e.clientX;
+  Blockly.Backpack.workspace_.startDragMouseY = e.clientY;
+  Blockly.Backpack.workspace_.startDragMetrics = Blockly.Backpack.workspace_.getMetrics();
+  Blockly.Backpack.workspace_.startScrollX = Blockly.Backpack.workspace_.scrollX;
+  Blockly.Backpack.workspace_.startScrollY = Blockly.Backpack.workspace_.scrollY;
+  
+}
+
+/**
+ * When block is let go over the backpack, copy it and return to original position
+ * @param {!Event} e Mouse up event
+ */
+Blockly.Backpack.onMouseUp = function(e, startX, startY){
+  var xy = Blockly.getAbsoluteXY_(this.svgGroup_);
+  //var xy = Blockly.convertCoordinates(e.clientX, e.clientY, true);
+  var mouseX = e.clientX //xy.x;
+  var mouseY = e.clientY //xy.y;
+  Blockly.selected.moveBy((startX - e.clientX), (startY - e.clientY));
+   
+}
+/**
+ * Determines if the mouse (with a block) is currently over the backpack.
+ * Opens/closes the lid and sets the isLarge flag.
+ * @param {!Event} e Mouse move event.
+ */
+Blockly.Backpack.onMouseMove = function(e) {
+  /*
+  An alternative approach would be to use onMouseOver and onMouseOut events.
+  However the selected block will be between the mouse and the backpack,
+  thus these events won't fire.
+  Another approach is to use HTML5's drag & drop API, but it's widely hated.
+  Instead, we'll just have the block's drag_ function call us.
+  */
+
+  if (Blockly.Backpack.workspace_.dragMode) {
+    Blockly.removeAllRanges();
+    var dx = e.clientX - Blockly.Backpack.workspace_.startDragMouseX;
+    var dy = e.clientY - Blockly.Backpack.workspace_.startDragMouseY;
+    var metrics = Blockly.Backpack.workspace_.startDragMetrics;
+    var x = Blockly.Backpack.workspace_.startScrollX + dx;
+    var y = Blockly.Backpack.workspace_.startScrollY + dy;
+    x = Math.min(x, -metrics.contentLeft);
+    y = Math.min(y, -metrics.contentTop);
+    x = Math.max(x, metrics.viewWidth - metrics.contentLeft -
+                 metrics.contentWidth);
+    y = Math.max(y, metrics.viewHeight - metrics.contentTop -
+                 metrics.contentHeight);
+
+    // Move the scrollbars and the page will scroll automatically.
+    Blockly.Backpack.workspace_.scrollbar.set(-x - metrics.contentLeft,
+                                       -y - metrics.contentTop);
+  }
+}
+
+  /*
+
+  if (!this.svgGroup_) {
+    return;
+  }
+  var xy = Blockly.getAbsoluteXY_(this.svgGroup_);
+  var left = xy.x;
+  var top = xy.y;
+
+  // Convert the mouse coordinates into SVG coordinates.
+  xy = Blockly.convertCoordinates(e.clientX, e.clientY, true);
+  var mouseX = xy.x;
+  var mouseY = xy.y;
+
+  var over = (mouseX > left) &&
+             (mouseX < left + this.WIDTH_) &&
+             (mouseY > top) &&
+             (mouseY < top + this.BODY_HEIGHT_);
+  if (this.isOpen != over) {
+     this.setOpen_(over);
+  }
+};
+
+
+Blockly.Backpack.mouseIsOver = function(e) {
+  xy = Blockly.convertCoordinates(e.clientX, e.clientY, true);
+  var mouseX = xy.x;
+  var mouseY = xy.y;
+  var over = (mouseX > this.left_) &&
+               (mouseX < this.left_ + this.WIDTH_) &&
+               (mouseY > this.top_) &&
+               (mouseY < this.top_ + this.BODY_HEIGHT_);
+  this.isOver = over;
+  return over;
+};
+
+*/
