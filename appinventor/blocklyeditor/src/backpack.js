@@ -53,7 +53,7 @@ Blockly.Backpack = {};
  * Width of workspace.
  * @private
  */
-Blockly.Backpack.workspaceWidth_ = 20;
+Blockly.Backpack.workspaceWidth_ = 300;
 
 /**
  * Height of workspace.
@@ -67,10 +67,12 @@ Blockly.Backpack.shouldHide = false;
 
 Blockly.Backpack.hasScrollbars = true;  
 
+Blockly.Backpack.isOver = false;
+
 Blockly.Backpack.getMetrics = function() {
 
-  var viewWidth = 390 - Blockly.Scrollbar.scrollbarThickness;
-  var viewHeight = 150 - Blockly.Scrollbar.scrollbarThickness;
+  var viewWidth = Blockly.Backpack.workspaceWidth_ - Blockly.Scrollbar.scrollbarThickness;
+  var viewHeight = Blockly.Backpack.workspaceHeight_ - Blockly.Scrollbar.scrollbarThickness;
   try {
     var blockBox = Blockly.Backpack.workspace_.getCanvas().getBBox();
   } catch (e) {
@@ -96,8 +98,8 @@ Blockly.Backpack.getMetrics = function() {
   //var absoluteLeft = Blockly.RTL ? 0 : Blockly.Toolbox.width;
   var absoluteLeft = Blockly.RTL ? 0 : 0;
   return {
-    viewHeight: 150,
-    viewWidth: 390,
+    viewHeight: Blockly.Backpack.workspaceHeight_,
+    viewWidth: Blockly.Backpack.workspaceWidth_,
     contentHeight: bottomEdge - topEdge,
     contentWidth: rightEdge - leftEdge,
     viewTop: -Blockly.Backpack.workspace_.scrollY,
@@ -107,20 +109,6 @@ Blockly.Backpack.getMetrics = function() {
     absoluteTop: 0,
     absoluteLeft: absoluteLeft
   };
-/*
-  return {
-    viewHeight: Blockly.Backpack.workspaceHeight_,
-    viewWidth: Blockly.Backpack.workspaceWidth_,  // This seem wrong, but results in correct RTL layout.
-    contentHeight: 100,
-    contentWidth: 200,
-    viewTop: 0,
-    viewLeft: 0,
-    contentTop: 0,
-    contentLeft: 0,
-    absoluteTop: 0,
-    absoluteLeft: 0
-  };
-  */
 }
 
 Blockly.Backpack.setMetrics = function(xyRatio) {
@@ -169,7 +157,7 @@ Blockly.Backpack.createEditor_ = function() {
       Blockly.Backpack.workspace_.scrollbar = new Blockly.ScrollbarPair(
          Blockly.Backpack.workspace_);
       Blockly.Backpack.workspace_.scrollbar.resize();
-      }
+  }
     
   Blockly.Backpack.workspace_.addTrashcan();
 
@@ -210,21 +198,6 @@ Blockly.Backpack.resizeBubble_ = function() {
     //Blockly.Backpack.workspace_.topBlocks_[0].render();
     Blockly.Backpack.workspace_.render();
 
-    /*
-    var workspaceSize = Blockly.Backpack.workspace_.getCanvas().getBBox();
-    var doubleBorderWidth = 2 * Blockly.Bubble.BORDER_WIDTH;
-    var width = Blockly.Backpack.bubble_.width_
-    var height = Blockly.Backpack.bubble_.height_
-
-    Blockly.Backpack.workspaceWidth_ = width;
-    Blockly.Backpack.workspaceHeight_ = height;
-    // Resize the bubble.
-    Blockly.Backpack.bubble_.setBubbleSize(width + doubleBorderWidth,
-                               height + doubleBorderWidth);
-    Blockly.Backpack.svgDialog_.setAttribute('width', Blockly.Backpack.workspaceWidth_);
-    Blockly.Backpack.svgDialog_.setAttribute('height', Blockly.Backpack.workspaceHeight_);
-    */
-
     var doubleBorderWidth = 2 * Blockly.BackpackBubble.BORDER_WIDTH;
 
     try {
@@ -249,6 +222,9 @@ Blockly.Backpack.resizeBubble_ = function() {
       // Record some layout information for getFlyoutMetrics_.
       Blockly.Backpack.workspaceWidth_ = width;
       Blockly.Backpack.workspaceHeight_ = height;
+      Blockly.Backpack.workspace_.viewWidth = width;
+      Blockly.Backpack.workspace_.viewHeight = height;
+      Blockly.Backpack.workspace_.scrollbar.resize();
       // Resize the bubble.
       Blockly.Backpack.bubble_.setBubbleSize(width + doubleBorderWidth,
                                  height + doubleBorderWidth);
@@ -280,8 +256,7 @@ Blockly.Backpack.setVisible = function(visible) {
     Blockly.Backpack.resizeBubble_();
     // When the Backpack's workspace changes, update the source block.
     Blockly.bindEvent_(Blockly.Backpack.workspace_.getCanvas(), 'blocklyWorkspaceChange',
-        Blockly.Backpack.block_, function() {Blockly.Backpack.workspaceChanged_();});
-   
+        Blockly.Backpack.block_, function() {Blockly.Backpack.workspaceChanged_();});  
 
     Blockly.Backpack.isVisible = true
   } else {
@@ -380,6 +355,14 @@ Blockly.Backpack.onMouseMove = function(e) {
   Another approach is to use HTML5's drag & drop API, but it's widely hated.
   Instead, we'll just have the block's drag_ function call us.
   */
+
+  var mouseXY = Blockly.mouseToSvg(e);
+  //var backpackXY = Blockly.getSvgXY_(Blockly.Backpack);
+  //Blockly.Backpack.isOver = (mouseXY.x > backpackXY.x) &&
+             (mouseXY.x < backpackXY.x + Blockly.Backpack.workspaceWidth_) &&
+             (mouseXY.y > backpackXY.y) &&
+             (mouseXY.y < backpackXY.y + Blockly.Backpack.workspaceHeight_);
+  Blockly.Backpack.isOver = true;
 
   if (Blockly.Backpack.workspace_.dragMode) {
     Blockly.removeAllRanges();

@@ -328,7 +328,7 @@ Blockly.onMouseDown_ = function(e) {
     if (Blockly.ContextMenu) {
       Blockly.showContextMenu_(Blockly.mouseToSvg(e));
     }
-  } else if (Blockly.Backpack.isVisible && Blockly.Backpack.workspace_) {
+  } else if (Blockly.Backpack.isVisible && Blockly.Backpack.isOver) {
       Blockly.Backpack.onMouseDown(e)
   } else  if ((Blockly.readOnly || isTargetSvg) &&
              Blockly.mainWorkspace.scrollbar) {
@@ -364,7 +364,7 @@ Blockly.onMouseUp_ = function(e) {
  * @private
  */
 Blockly.onMouseMove_ = function(e) {
-  if (Blockly.Backpack.workspace_) {
+  if (Blockly.Backpack.isOver) {
       Blockly.Backpack.onMouseMove(e)
   } else {
     if (Blockly.mainWorkspace.dragMode) {
