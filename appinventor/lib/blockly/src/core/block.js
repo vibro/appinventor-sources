@@ -73,6 +73,7 @@ Blockly.Block = function(workspace, prototypeName) {
 
   this.workspace = workspace;
   this.isInFlyout = workspace.isFlyout;
+  this.isInBackpack = false
 
   workspace.addTopBlock(this);
 
@@ -523,6 +524,12 @@ Blockly.Block.prototype.onMouseUp_ = function(e) {
     // resize to contain the newly positioned block.  Force a second resize now
     // that the block has been deleted.
     Blockly.fireUiEvent(window, 'resize');
+  } else if (Blockly.Backpack.isVisible && Blockly.isOverBackpack(e)) {
+     if (!this.isInBackpack) {
+      Blockly.Backpack.onMouseUp(e, this.startDragMouseX, this.startDragMouseY, this, false);
+      } 
+  } else if (Blockly.Backpack.isVisible && !Blockly.isOverBackpack(e) && this.isInBackpack) {
+        Blockly.Backpack.onMouseUp(e, this.startDragMouseX, this.startDragMouseX, this, true);
   }
   if (Blockly.highlightedConnection_) {
     Blockly.highlightedConnection_.unhighlight();

@@ -257,7 +257,7 @@ Blockly.Backpack.setVisible = function(visible) {
     // When the Backpack's workspace changes, update the source block.
     Blockly.bindEvent_(Blockly.Backpack.workspace_.getCanvas(), 'blocklyWorkspaceChange',
         Blockly.Backpack.block_, function() {Blockly.Backpack.workspaceChanged_();});  
-
+    
     Blockly.Backpack.isVisible = true
   } else {
     // Dispose of the bubble.
@@ -270,6 +270,7 @@ Blockly.Backpack.setVisible = function(visible) {
     Blockly.Backpack.bubble_ = null;
     Blockly.Backpack.workspaceWidth_ = 0;
     Blockly.Backpack.workspaceHeight_ = 0;
+    
     if (Blockly.Backpack.sourceListener_) {
       Blockly.unbindEvent_(Blockly.Backpack.sourceListener_);
       Blockly.Backpack.sourceListener_ = null;
@@ -309,6 +310,21 @@ Blockly.Backpack.workspaceChanged_ = function() {
   }
 };
 
+
+Blockly.Backpack.addToBackpack = function(block) {
+  var dom = Blockly.Xml.blockToDom_(block);
+  var bl = Blockly.Xml.domToBlock_(Blockly.Backpack.workspace_, dom);
+  bl.moveBy(0,0)
+  bl.isInBackpack = true;
+}
+
+Blockly.Backpack.copyToWorkspace = function(block){
+  var dom = Blockly.Xml.blockToDom_(block);
+  var bl = Blockly.Xml.domToBlock_(Blockly.mainWorkspace, dom);
+  bl.moveBy(0,0)
+  bl.isInBackpack = false;
+}
+
 //mouse callbacks
 
 /**
@@ -316,10 +332,7 @@ Blockly.Backpack.workspaceChanged_ = function() {
  * @param {!Event} e Mouse down event.
  */
 Blockly.Backpack.onMouseDown = function(e){
-  // var xy = Blockly.getAbsoluteXY_(this.svgGroup_);
-  // this.startX = xy.x;
-  // this.startY = xy.y;
-
+  
   Blockly.Backpack.workspace_.dragMode = true;
   // Record the current mouse position.
   Blockly.Backpack.workspace_.startDragMouseX = e.clientX;
@@ -334,12 +347,18 @@ Blockly.Backpack.onMouseDown = function(e){
  * When block is let go over the backpack, copy it and return to original position
  * @param {!Event} e Mouse up event
  */
-Blockly.Backpack.onMouseUp = function(e, startX, startY){
-  var xy = Blockly.getAbsoluteXY_(this.svgGroup_);
-  //var xy = Blockly.convertCoordinates(e.clientX, e.clientY, true);
+Blockly.Backpack.onMouseUp = function(e, startX, startY, block, inBackpack){
+
+  if (!inBackpack) {
+    Blockly.Backpack.addToBackpack(block);
+  } else {
+    Blockly.Backpack.copyToWorkspace(block)
+  }
+  var xy = Blockly.getAbsoluteXY_(Blockly.Backpack.bubble_.bubbleGroup_);
   var mouseX = e.clientX //xy.x;
   var mouseY = e.clientY //xy.y;
   Blockly.selected.moveBy((startX - e.clientX), (startY - e.clientY));
+ 
    
 }
 /**
@@ -357,12 +376,12 @@ Blockly.Backpack.onMouseMove = function(e) {
   */
 
   var mouseXY = Blockly.mouseToSvg(e);
-  //var backpackXY = Blockly.getSvgXY_(Blockly.Backpack);
-  //Blockly.Backpack.isOver = (mouseXY.x > backpackXY.x) &&
+  var backpackXY = Blockly.getSvgXY_(Blockly.Backpack.bubble_.bubbleGroup_);
+  Blockly.Backpack.isOver = (mouseXY.x > backpackXY.x) &&
              (mouseXY.x < backpackXY.x + Blockly.Backpack.workspaceWidth_) &&
              (mouseXY.y > backpackXY.y) &&
              (mouseXY.y < backpackXY.y + Blockly.Backpack.workspaceHeight_);
-  Blockly.Backpack.isOver = true;
+  //Blockly.Backpack.isOver = true;
 
   if (Blockly.Backpack.workspace_.dragMode) {
     Blockly.removeAllRanges();
@@ -380,7 +399,7 @@ Blockly.Backpack.onMouseMove = function(e) {
 
     // Move the scrollbars and the page will scroll automatically.
     Blockly.Backpack.workspace_.scrollbar.set(-x - metrics.contentLeft,
-                                       -y - metrics.contentTop);
+                                              -y - metrics.contentTop);
   }
 }
 

@@ -39,7 +39,8 @@ goog.require('Blockly.Workspace');
  */
 Blockly.BackpackBubble = function(workspace, content,
                           bubbleWidth, bubbleHeight) {
-    
+  this.anchorX_ = 0;
+  this.anchorY_ = 0;
   this.workspace_ = workspace;
   this.content_ = content;
   var canvas = workspace.getBubbleCanvas();
@@ -90,6 +91,12 @@ Blockly.BackpackBubble.onMouseUpWrapper_ = null;
  * @private
  */
 Blockly.BackpackBubble.onMouseMoveWrapper_ = null;
+
+/**
+ * Automatically position and reposition the bubble.
+ * @private
+ */
+Blockly.BackpackBubble.prototype.autoLayout_ = true;
 
 /**
  * Stop binding to the global mouseup and mousemove events.
@@ -326,12 +333,13 @@ Blockly.BackpackBubble.prototype.layoutBubble_ = function() {
           this.width_ - Blockly.BlockSvg.SEP_SPACE_X -
           Blockly.Scrollbar.scrollbarThickness;
     }
-    if (this.anchorY_ + relativeTop <
-        Blockly.BlockSvg.SEP_SPACE_Y + metrics.viewTop) {
-      // Slide the bubble below the block.
-      var bBox = /** @type {SVGLocatable} */ (this.shape_).getBBox();
-      relativeTop = bBox.height;
-    }
+// [lyn, 12/15/13] Ignore this since no shape
+//    if (this.anchorY_ + relativeTop <
+//        Blockly.BlockSvg.SEP_SPACE_Y + metrics.viewTop) {
+//      // Slide the bubble below the block.
+//      var bBox = /** @type {SVGLocatable} */ (this.shape_).getBBox();
+//      relativeTop = bBox.height;
+//    }
   }
   this.relativeLeft_ = relativeLeft;
   this.relativeTop_ = relativeTop;
@@ -342,11 +350,16 @@ Blockly.BackpackBubble.prototype.layoutBubble_ = function() {
  * @private
  */
 Blockly.BackpackBubble.prototype.positionBubble_ = function() {
-  
-  /*this.bubbleGroup_.setAttribute('transform',
+  var left;
+  if (Blockly.RTL) {
+    left = this.anchorX_ - this.relativeLeft_ - this.width_;
+  } else {
+    left = this.anchorX_ + this.relativeLeft_;
+  }
+  var top = this.relativeTop_ + this.anchorY_;
+  this.bubbleGroup_.setAttribute('transform',
       'translate(' + left + ', ' + top + ')');
-  */
-}; 
+};
 
 /**
  * Get the dimensions of this bubble.

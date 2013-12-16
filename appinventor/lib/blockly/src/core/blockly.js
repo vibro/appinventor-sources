@@ -288,6 +288,20 @@ Blockly.svgResize = function() {
  */
 Blockly.latestClick = { x: 0, y: 0 };
 
+Blockly.isOverBackpack = function(e){
+  if (Blockly.Backpack.isVisible){
+    var mouseXY = Blockly.mouseToSvg(e);
+    var backpackXY = Blockly.getSvgXY_(Blockly.Backpack.bubble_.bubbleGroup_);
+    var over = (mouseXY.x > backpackXY.x) &&
+               (mouseXY.x < backpackXY.x + Blockly.Backpack.workspaceWidth_) &&
+               (mouseXY.y > backpackXY.y) &&
+               (mouseXY.y < backpackXY.y + Blockly.Backpack.workspaceHeight_);
+    return over
+  } else {
+    return false;
+  }
+}
+
 /**
  * Handle a mouse-down on SVG drawing surface.
  * @param {!Event} e Mouse down event.
@@ -328,8 +342,9 @@ Blockly.onMouseDown_ = function(e) {
     if (Blockly.ContextMenu) {
       Blockly.showContextMenu_(Blockly.mouseToSvg(e));
     }
-  } else if (Blockly.Backpack.isVisible && Blockly.Backpack.isOver) {
+  } else if (Blockly.Backpack.isVisible && Blockly.isOverBackpack(e)) {
       Blockly.Backpack.onMouseDown(e)
+      console.log("we're here")
   } else  if ((Blockly.readOnly || isTargetSvg) &&
              Blockly.mainWorkspace.scrollbar) {
     // If the workspace is editable, only allow dragging when gripping empty
@@ -352,7 +367,7 @@ Blockly.onMouseDown_ = function(e) {
 Blockly.onMouseUp_ = function(e) {
   Blockly.setCursorHand_(false);
   Blockly.mainWorkspace.dragMode = false;
-  if (Blockly.Backpack.isVisible){
+  if (Blockly.isOverBackpack(e)){
     Blockly.Backpack.workspace_.dragMode = false;
   }
   
@@ -364,7 +379,7 @@ Blockly.onMouseUp_ = function(e) {
  * @private
  */
 Blockly.onMouseMove_ = function(e) {
-  if (Blockly.Backpack.isOver) {
+  if (Blockly.isOverBackpack(e)) {
       Blockly.Backpack.onMouseMove(e)
   } else {
     if (Blockly.mainWorkspace.dragMode) {
