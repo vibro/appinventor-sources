@@ -105,6 +105,9 @@ public class BlocklyPanel extends HTMLPanel {
   // Status of blocks loading, indexed by form name.
   private static final Map<String, LoadStatus> loadStatusMap = Maps.newHashMap();
 
+  // Backpack
+  private static String backpack = "";
+
   // My form name
   private String formName;
 
@@ -424,6 +427,14 @@ public class BlocklyPanel extends HTMLPanel {
     YaBlocksEditor.toggleWarning();
   }
 
+  public static String getBackpack() {
+    return backpack;
+  }
+
+  public static void setBackpack(String bp_contents){
+    backpack = bp_contents;
+  }
+
   /**
    * Remember any component instances for this form in case
    * the workspace gets reinitialized later (we get detached from
@@ -708,6 +719,10 @@ public class BlocklyPanel extends HTMLPanel {
       $entry(@com.google.appinventor.client.editor.youngandroid.BlocklyPanel::getYaVersion());
     $wnd.BlocklyPanel_getBlocksLanguageVersion=
       $entry(@com.google.appinventor.client.editor.youngandroid.BlocklyPanel::getBlocksLanguageVersion());
+    $wnd.BlocklyPanel_getBackpack =
+      $entry(@com.google.appinventor.client.editor.youngandroid.BlocklyPanel::getBackpack());
+    $wnd.BlocklyPanel_setBackpack =
+      $entry(@com.google.appinventor.client.editor.youngandroid.BlocklyPanel::setBackpack(Ljava/lang/String;));
 
   }-*/;
 

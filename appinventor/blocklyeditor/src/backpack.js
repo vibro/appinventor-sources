@@ -162,7 +162,7 @@ Blockly.Backpack.createEditor_ = function() {
   Blockly.Backpack.workspace_.addTrashcan();
 
   // [lyn, 12/10/13] Let's make the backpack workspace nonempty by adding some blocks
-  var xmlString = '<xml>' +
+  /*var xmlString = '<xml>' +
       '<block type="controls_forRange">' +
       '<value name="START">' +
       '<block type="math_add" inline="true">' +
@@ -176,7 +176,14 @@ Blockly.Backpack.createEditor_ = function() {
       '</xml>';
   var dom = Blockly.Xml.textToDom(xmlString);
   Blockly.Xml.domToWorkspace(Blockly.Backpack.workspace_, dom);
+  */
 
+  var text = Blockly.Backpack.getBackpack();
+  if (text != "") {
+    var dom = Blockly.Xml.textToDom(text);
+    Blockly.Xml.domToWorkspace(Blockly.Backpack.workspace_, dom);
+  }
+  
 
   //when Backpack bubble is clicked, do not close Backpack
   Blockly.bindEvent_(Blockly.Backpack.svgDialog_, 'mousedown', Blockly.Backpack.svgDialog_,
@@ -260,7 +267,9 @@ Blockly.Backpack.setVisible = function(visible) {
     
     Blockly.Backpack.isVisible = true
   } else {
+
     // Dispose of the bubble.
+    Blockly.Backpack.saveWorkspace();
     Blockly.Backpack.svgDialog_ = null;
     Blockly.Backpack.svgBackground_ = null;
     Blockly.Backpack.workspace_.dispose();
@@ -316,6 +325,7 @@ Blockly.Backpack.addToBackpack = function(block) {
   var bl = Blockly.Xml.domToBlock_(Blockly.Backpack.workspace_, dom);
   bl.moveBy(0,0)
   bl.isInBackpack = true;
+  Blockly.Backpack.saveWorkspace();
 }
 
 Blockly.Backpack.copyToWorkspace = function(block){
@@ -325,6 +335,11 @@ Blockly.Backpack.copyToWorkspace = function(block){
   bl.isInBackpack = false;
 }
 
+Blockly.Backpack.saveWorkspace = function() {
+  var wrkDom = Blockly.Xml.workspaceToDom(Blockly.Backpack.workspace_)
+  var wrkText = Blockly.Xml.domToText(wrkDom)
+  Blockly.Backpack.setBackpack(wrkText)
+}
 //mouse callbacks
 
 /**
@@ -354,7 +369,7 @@ Blockly.Backpack.onMouseUp = function(e, startX, startY, block, inBackpack){
   } else {
     Blockly.Backpack.copyToWorkspace(block)
   }
-  var xy = Blockly.getAbsoluteXY_(Blockly.Backpack.bubble_.bubbleGroup_);
+      var xy = Blockly.getAbsoluteXY_(Blockly.Backpack.bubble_.bubbleGroup_);
   var mouseX = e.clientX //xy.x;
   var mouseY = e.clientY //xy.y;
   Blockly.selected.moveBy((startX - e.clientX), (startY - e.clientY));
@@ -403,6 +418,13 @@ Blockly.Backpack.onMouseMove = function(e) {
   }
 }
 
+Blockly.Backpack.getBackpack = function() {
+   return window.parent.BlocklyPanel_getBackpack();
+  } 
+
+Blockly.Backpack.setBackpack = function(backpack) {
+   window.parent.BlocklyPanel_setBackpack(backpack);
+  }
   /*
 
   if (!this.svgGroup_) {
